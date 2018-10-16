@@ -1,4 +1,4 @@
-./proposal/TADPOLE_InputData.csv
-./proposal/TADPOLE_TargetData_train.csv
-./proposal/TADPOLE_PredictTargetData_test.csv
-./proposal/TADPOLE_TargetData_validation.csv
+proposal/TADPOLE_InputData.csv
+proposal/TADPOLE_TargetData_train.csv
+proposal/TADPOLE_PredictTargetData_test.csv
+proposal/TADPOLE_TargetData_validation.csv
