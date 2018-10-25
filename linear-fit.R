@@ -113,9 +113,10 @@ fillFrame <- function(emptyValidation, exams, index){
   
   
   ############
-  
-  for(futureExamDate in patientsToFill$Date) {
-    days = as.integer(as.Date(as.character(futureExamDate), format="%m/%d/%y") - startDate)
+  dates = as.character(patientsToFill$Date)
+  for(index in c(1:length(dates))) {
+    futureExamDate = dates[index]
+    days = as.integer(as.Date(futureExamDate, format="%m/%d/%y") - startDate)
     
     if (!is.na(slope)) {
       dxChange = days * slope + intercept
@@ -138,17 +139,22 @@ fillFrame <- function(emptyValidation, exams, index){
         emptyValidation[emptyValidation$PTID_Key == ptid,]$AD_Diag = NA
       }
     }
+    
+    if(!is.na(slopeADAS)){
+      emptyValidation[emptyValidation$PTID_Key == ptid & emptyValidation$Date == futureExamDate,]$ADAS13 = days * slopeADAS + interceptADAS
+    }
+    
+    if(!is.na(slopeVentricles)) {
+      emptyValidation[emptyValidation$PTID_Key == ptid & emptyValidation$Date == futureExamDate,]$Ventricles_Norm = days * slopeVentricles + interceptVentricles
+    }
+    if(!is.na(slopeMMSE)){
+      emptyValidation[emptyValidation$PTID_Key == ptid & emptyValidation$Date == futureExamDate,]$MMSE = days * slopeMMSE + interceptMMSE    
+    }
+    
   }
   
-  if(!is.na(slopeADAS)){
-    emptyValidation[emptyValidation$PTID_Key == ptid & emptyValidation$Date == futureExamDate,]$ADAS13 = days * slopeADAS + interceptADAS
-  }
-  if(!is.na(slopeVentricles)) {
-    emptyValidation[emptyValidation$PTID_Key == ptid & emptyValidation$Date == futureExamDate,]$Ventricles_Norm = days * slopeVentricles + interceptVentricles
-  }
-  if(!is.na(slopeMMSE)){
-    emptyValidation[emptyValidation$PTID_Key == ptid & emptyValidation$Date == futureExamDate,]$MMSE = days * slopeMMSE + interceptMMSE    
-  }
+  
+
     
 
   return(emptyValidation)
