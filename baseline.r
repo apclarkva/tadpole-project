@@ -4,11 +4,11 @@ library(dplyr)
 
 # This is the baseline script. In this script, I use the examinations from TADPOLE_InputData.csv to fill in predictions for the diagnosis, ADAS13, normalized ventricle size, and MMSE on future examination dates for patients. Most (possibly all) patients will have multiple future dates to predict.
 
-#inputTrainingData <- read.csv("proposal/TADPOLE_InputData.csv")
+inputTrainingData <- read.csv("proposal/TADPOLE_InputData.csv")
 
-targetDataTrain <- read.csv("proposal/TADPOLE_TargetData_train.csv")
+targetDataTrain <- read.csv("Alex/TADPOLE_TargetData_train_pre_processed.csv")
 
-targetDataValidation <- read.csv("proposal/TADPOLE_TargetData_validation_pre_processed.csv")
+targetDataValidation <- read.csv("Alex/TADPOLE_TargetData_validation_pre_processed.csv")
 
 ## Create empty data frame
 dfPtidDates <- function(dataSet){
@@ -89,7 +89,6 @@ for (index in c(1:length(patients))){
   }
   
   validationToFill <- fillFrame(validationToFill, currentPatientExams, index)
-  print(index)
 }
 
 
@@ -105,12 +104,12 @@ patientExamsValidation <- inputTrainingData[inputTrainingData$PTID_Key %in%  pat
 # find inputs for the RNN
 df <- patientExamsTraining
 patientsTrainingIn <- data.frame(Date = df$EXAMDATE, PTID_Key = df$PTID_Key, DXCHANG = df$DXCHANGE, ADAS13 = df$ADAS13, Ventricular_Volume = df$Ventricles, Brain_Volume = df$WholeBrain, MMSE = df$MMSE, AGE = df$AGE, SEX = df$PTGENDER, APOE = df$APOE4)
-write.csv(patientsTrainingIn, file = "trainingInputsRNN.csv")
+write.csv(patientsTrainingIn, file = "Alex/data/trainingInputsRNN.csv")
 
 # Find validation inputs for the RNN
 df <- patientExamsValidation
 patientsValidationIn <- data.frame(Date = df$EXAMDATE, PTID_Key = df$PTID_Key, DXCHANG = df$DXCHANGE, ADAS13 = df$ADAS13, Ventricular_Volume = df$Ventricles, Brain_Volume = df$WholeBrain, MMSE = df$MMSE, AGE = df$AGE, SEX = df$PTGENDER, APOE = df$APOE4)
-write.csv(patientsValidationIn, file = "validationInputsRNN.csv")
+write.csv(patientsValidationIn, file = "Alex/data/validationInputsRNN.csv")
 
 
 

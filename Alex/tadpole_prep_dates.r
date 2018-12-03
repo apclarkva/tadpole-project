@@ -1,6 +1,6 @@
 ## Load in training information
-trainingInputsRNN <- read.csv("trainingInputsRNN.csv")
-validationInputsRNN <- read.csv("trainingInputsRNN.csv")
+trainingInputsRNN <- read.csv("data/trainingInputsRNN.csv")
+validationInputsRNN <- read.csv("data/validationInputsRNN.csv")
 
 ## Load in targets
 trainingTargets <- read.csv("TADPOLE_TargetData_train_pre_processed.csv")

@@ -61,8 +61,8 @@ fillMissingOut <- function(exams){
 trainingOut <- fillMissingOut(trainingOut)
 validationOut <- fillMissingOut(validationOut)
 
-write.csv(trainingIn, file ="data/trainingInRNN.csv")
-write.csv(trainingOut, file="data/trainingOutRNN.csv")
+write.csv(trainingIn, file ="data/trainingInFinal.csv")
+write.csv(trainingOut, file="data/trainingOutFinal.csv")
 
-write.csv(validationIn, file="data/validationInRNN.csv")
-write.csv(validationOut, file="data/validationOutRNN.csv")
+write.csv(validationIn, file="data/validationInFinal.csv")
+write.csv(validationOut, file="data/validationOutFinal.csv")

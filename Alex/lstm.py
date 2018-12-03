@@ -52,6 +52,16 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
     agg.dropna(inplace=True)
   return agg
 
+
+# model = Sequential()
+# model.add(LSTM(50, input_shape=(train_X.shape[1], train_X.shape[2])))
+# model.add(Dense(1))
+# model.compile(loss='mae', optimizer='adam')
+
+
+# history = model.fit(train_X, train_y, epochs=50, batch_size=72, validation_data=(test_X, test_y), verbose=2, shuffle=False)
+
+
 # Loop through each unique patient
 for ptid in training_input.PTID_Key.unique():
   patient_training_input = training_input.loc[training_input['PTID_Key'] == ptid]
@@ -64,6 +74,8 @@ for ptid in training_input.PTID_Key.unique():
 
   print(supervised_training_input.shape)
   break
+
+
 
 
 
