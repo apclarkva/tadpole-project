@@ -1,3 +1,11 @@
+### ECE5970 Final Project
+
+This is the code for the final Tadpole project. Most of the final code is in:
+
+- `./Alex/lstm_aug_data.py`
+
+#### How to use this repo
+
 Instead of using the full git workflow, everyone can have their own folder.
 
 #### Fist, clone the repo
