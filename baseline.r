@@ -91,6 +91,7 @@ for (index in c(1:length(patients))){
   validationToFill <- fillFrame(validationToFill, currentPatientExams, index)
 }
 
+write.csv(validationToFill, "Alex/data/baseline_data.csv")
 
 
 # Find patients in training and validation datasets

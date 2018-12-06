@@ -1,5 +1,6 @@
 import pandas as pd
 import pdb
+
 import numpy
 from datetime import datetime
 
@@ -186,8 +187,69 @@ def reshape_inputs(input_data):
 
   return(reshaped_inputs)
 
+
+def augment_data(input_data, outputs_scaled , num_observations):
+  indices_not_nan = numpy.logical_not(numpy.isnan(numpy.array(outputs_scaled[:,3], dtype=numpy.float)))
+  outputs_scaled_remove_nan = outputs_scaled[indices_not_nan,:]
+
+  patients_out = numpy.unique(outputs_scaled_remove_nan[:,1], return_counts=True)
+
+  input_data_remove_na = input_data[numpy.isin(input_data[:,1], patients_out[0]),:]
+
+  patients_in = numpy.unique(input_data_remove_na[:,1], return_counts=True)
+
+
+
+  new_dataset = numpy.empty((0,11))
+
+  for index in range(0, len(patients_in[0])):
+    current_patient_observations = input_data_remove_na[numpy.isin(input_data_remove_na[:,1], patients_in[0][index]),:]
+
+    if (patients_in[1][index] < num_observations):
+      num_aug_data = -(patients_in[1][index] - num_observations)
+
+      for artificial_iteration in range(0, num_aug_data):
+        current_patient_observations = numpy.concatenate((current_patient_observations[0,:].reshape(1,11), current_patient_observations), axis = 0)
+
+   
+    new_dataset = numpy.concatenate((new_dataset, current_patient_observations))
+  
+
+  return(new_dataset) # The new dataset will have > number of observations for every patient in the outputs that is not NAN
+
+
+def remove_nan(data_in):
+  indices_not_nan = numpy.logical_not(numpy.isnan(numpy.array(data_in[:,3], dtype=numpy.float)))
+  data_remove_nan = data_in[indices_not_nan,:]
+  return(data_remove_nan)
+
+
+
+
+outputs_scaled_training = remove_nan(outputs_scaled_training)
+indices_not_nan = numpy.logical_not(numpy.isnan(numpy.array(outputs_scaled_validation[:,3], dtype=numpy.float)))
+baseline_total = baseline_validation.values
+baseline_total = baseline_total[indices_not_nan,:]
+baseline_validation_values = baseline_validation.values
+baseline_holdover = baseline_validation_values[indices_not_nan,:]
+baseline_validation_values = baseline_validation_values[indices_not_nan,:]
+
+correct_values = correct_values[indices_not_nan,:]
+baseline_validation_scaled = baseline_validation_scaled[indices_not_nan,:]
+
+outputs_scaled_validation = remove_nan(outputs_scaled_validation)
+
+indices_not_nan = numpy.logical_not(numpy.isnan(numpy.array(outputs_scaled_training[:,3], dtype=numpy.float)))
+inputs_scaled_training = augment_data(inputs_scaled_training, outputs_scaled_training ,number_of_observations)
+inputs_scaled_validation = augment_data(inputs_scaled_validation, outputs_scaled_validation ,number_of_observations)
+
+
 inputs_reshaped_training = reshape_inputs(inputs_scaled_training)
 inputs_reshaped_testing = reshape_inputs(inputs_scaled_validation)
+
+
+
+
 
 
 def outputs_input_to_obtain(inputs_reshaped, empty_in, output_data):
@@ -197,7 +259,6 @@ def outputs_input_to_obtain(inputs_reshaped, empty_in, output_data):
   patient_index = 0
   
   patients = patient_output_observation_frequency[0]
-
   for patient in patients:
     input_values = inputs_reshaped[patient_index,:,:]
     output_values = output_data[output_data[:,1] == patient,]
@@ -226,11 +287,12 @@ array_in = numpy.empty((0,15,9))
 array_for_model_training = outputs_input_to_obtain(inputs_reshaped_training, array_in, outputs_scaled_training)
 array_for_model_validation = outputs_input_to_obtain(inputs_reshaped_testing, array_in, outputs_scaled_validation)
 
-
 # Which patients am I training on?
 # I am using the output data saved to *outputs_scaled*
 # I am using the input data saved to *array_for_model*
 # The patients_indices array finds the patients who I will be using
+
+
 
 
 def find_indices_to_use(input_data, outputs_scaled, num_observations):
@@ -239,13 +301,14 @@ def find_indices_to_use(input_data, outputs_scaled, num_observations):
   indices_not_nan = numpy.array(outputs_scaled[:,3], dtype=numpy.float)
   indices_not_nan = numpy.logical_not(numpy.isnan(indices_not_nan))
 
-  patients_for_training = patients_in[0][patients_in[1] > num_observations]
+  patients_for_training = patients_in[0][patients_in[1] >= num_observations]
   # Something like the following: 
   indices_enough_observations = numpy.isin(outputs_scaled[:,1], patients_for_training)
 
   indices_to_use = numpy.logical_and(indices_not_nan, indices_enough_observations)
 
   return(indices_to_use)
+
 
 
 
@@ -293,7 +356,7 @@ model.compile(loss='categorical_crossentropy', optimizer='adam')
 
 # The following is 50 ephochs with a batch size of 72. I'll be doing
 # validation_data=(test_X, test_y),
-epoch_num = 50
+epoch_num = 15
 batch_num = 15 #Best yet: 23 epochs and batch 10 -- .832 -- got lucky
 history = model.fit(array_for_model_training[indices_to_use_training,0:number_of_observations,:], outputs_scaled_training[indices_to_use_training,2:5], validation_data=(array_for_model_validation[indices_to_use_validation,0:number_of_observations,:], outputs_scaled_validation[indices_to_use_validation,2:5]), epochs=epoch_num, batch_size=batch_num, verbose=2, shuffle=False)
 
@@ -302,13 +365,11 @@ def return_prediction_categorical(model, history, validation_inputs):
   return(yhat)
 
 
-
 yhat = return_prediction_categorical(model, history, array_for_model_validation[indices_to_use_validation,0:number_of_observations,:])
 
 yhat_cat = yhat
 
-baseline_total = baseline_validation.values
-baseline_validation_scaled[indices_to_use_validation,2:5] = yhat
+baseline_validation_scaled[:,2:5] = yhat
 yhat_total = baseline_validation_scaled[:,2:5]
 
 diagnosticCountYTotal = 0
@@ -316,12 +377,9 @@ diagnosticCountBaselineTotal = 0
 
 yhat_total = (yhat_total == yhat_total.max(axis=1)[:,None]).astype(int)
 
-
 baseline_total = baseline_total[~numpy.isnan(numpy.array(correct_values[:,2], dtype=numpy.float)),]
 yhat_total = yhat_total[~numpy.isnan(numpy.array(correct_values[:,2], dtype=numpy.float)),]
 correct_values_less = correct_values[~numpy.isnan(numpy.array(correct_values[:,2], dtype=numpy.float)),]
-
-
 
 for index in range(0, baseline_total.shape[0]):
   if ((correct_values_less[index,2] == yhat_total[index,0]) & (correct_values_less[index,3] == yhat_total[index,1]) & (correct_values_less[index,4] == yhat_total[index,2])):
@@ -333,99 +391,133 @@ for index in range(0, baseline_total.shape[0]):
 percent_yhat = diagnosticCountYTotal/baseline_total.shape[0]
 percent_baseline = diagnosticCountBaselineTotal/baseline_total.shape[0]
 
-pyplot.plot(history.history['loss'], label='train')
-pyplot.plot(history.history['val_loss'], label='test')
+# pyplot.plot(history.history['loss'], label='train')
+# pyplot.plot(history.history['val_loss'], label='test')
+# pyplot.title("Diagnosis LSTM Training")
+# pyplot.xlabel("Epoch")
+# pyplot.ylabel("Loss")
+# pyplot.legend()
+# pyplot.show()
+
+
+
+adas_bath = 30
+adas_epoch = 20
+
+vv_batch = 10
+vv_epoch = 40
+
+mmse_batch = 30
+mmse_epoch = 30
+
+
+model_adas = Sequential()
+model_adas.add(LSTM(50, input_shape=(number_of_observations, array_for_model_training.shape[2])))
+
+model_adas.add(Dense(50, activation="relu"))
+
+model_adas.add(Dense(1))
+model_adas.compile(loss='mae', optimizer='adam')
+
+
+
+history_adas = model_adas.fit(array_for_model_training[indices_to_use_training,0:number_of_observations,:], outputs_scaled_training[indices_to_use_training,5], validation_data=(array_for_model_validation[indices_to_use_validation,0:number_of_observations,:], outputs_scaled_validation[indices_to_use_validation,5]), epochs=adas_epoch, batch_size=adas_bath, verbose=2, shuffle=False)
+
+pyplot.plot(history_adas.history['loss'], label='train')
+pyplot.plot(history_adas.history['val_loss'], label='test')
+pyplot.title("ADAS LSTM Training")
+pyplot.xlabel("Epoch")
+pyplot.ylabel("Loss")
 pyplot.legend()
 pyplot.show()
 
-pdb.set_trace()
+def return_prediction_continuous(model, history, validation_inputs):
+  yhat = model.predict(validation_inputs)
+
+  return(yhat)
+
+# scaler.inverse_transform(inputs_to_normalize)
+
+model_ventricular_norm = Sequential()
+model_ventricular_norm.add(LSTM(50, input_shape=(number_of_observations, array_for_model_training.shape[2])))
+
+model_ventricular_norm.add(Dense(50, activation="relu"))
+
+model_ventricular_norm.add(Dense(1))
+model_ventricular_norm.compile(loss='mae', optimizer='adam')
+
+
+history_ventricular_norm = model_ventricular_norm.fit(array_for_model_training[indices_to_use_training,0:number_of_observations,:], outputs_scaled_training[indices_to_use_training,6], validation_data=(array_for_model_validation[indices_to_use_validation,0:number_of_observations,:], outputs_scaled_validation[indices_to_use_validation,6]), epochs=vv_epoch, batch_size=vv_batch, verbose=2, shuffle=False)
+
+pyplot.plot(history_ventricular_norm.history['loss'], label='train')
+pyplot.plot(history_ventricular_norm.history['val_loss'], label='test')
+pyplot.title("Diagnosis Ventricular Norm Training")
+pyplot.xlabel("Epoch")
+pyplot.ylabel("Loss")
+pyplot.legend()
+pyplot.show()
+
+model_mmse = Sequential()
+model_mmse.add(LSTM(50, input_shape=(number_of_observations, array_for_model_training.shape[2])))
+
+model_mmse.add(Dense(50, activation="relu"))
+
+model_mmse.add(Dense(1))
+model_mmse.compile(loss='mae', optimizer='adam')
+
+history_mmse = model_mmse.fit(array_for_model_training[indices_to_use_training,0:number_of_observations,:], outputs_scaled_training[indices_to_use_training,7], validation_data=(array_for_model_validation[indices_to_use_validation,0:number_of_observations,:], outputs_scaled_validation[indices_to_use_validation,7]), epochs=mmse_epoch, batch_size=mmse_batch, verbose=2, shuffle=False)
 
 
 
+# pyplot.plot(history_mmse.history['loss'], label='train')
+# pyplot.plot(history_mmse.history['val_loss'], label='test')
+# pyplot.title("Diagnosis MMSE Training")
+# pyplot.xlabel("Epoch")
+# pyplot.ylabel("Loss")
+# pyplot.legend()
+# pyplot.show()
+
+yhat_adas = return_prediction_continuous(model_adas, history_adas, array_for_model_validation[indices_to_use_validation,0:number_of_observations,:])
 
 
-# model_adas = Sequential()
-# model_adas.add(LSTM(50, input_shape=(number_of_observations, array_for_model_training.shape[2])))
-
-# # model_adas.add(Dense(50, activation="relu"))
-
-# model_adas.add(Dense(1))
-# model_adas.compile(loss='mae', optimizer='adam')
-
-# # history_adas = model_adas.fit(array_for_model_training[indices_to_use_training,0:number_of_observations,:], outputs_scaled_training[indices_to_use_training,5], validation_data=(array_for_model_validation[indices_to_use_validation,0:number_of_observations,:], outputs_scaled_validation[indices_to_use_validation,5]), epochs=80, batch_size=20, verbose=2, shuffle=False)
-
-# def return_prediction_continuous(model, history, validation_inputs):
-#   yhat = model.predict(validation_inputs)
-
-#   return(yhat)
-
-# # scaler.inverse_transform(inputs_to_normalize)
-
-# model_ventricular_norm = Sequential()
-# model_ventricular_norm.add(LSTM(50, input_shape=(number_of_observations, array_for_model_training.shape[2])))
-
-# # model_ventricular_norm.add(Dense(50, activation="relu"))
-
-# model_ventricular_norm.add(Dense(1))
-# model_ventricular_norm.compile(loss='mae', optimizer='adam')
-
-
-# # history_ventricular_norm = model_ventricular_norm.fit(array_for_model_training[indices_to_use_training,0:number_of_observations,:], outputs_scaled_training[indices_to_use_training,6], validation_data=(array_for_model_validation[indices_to_use_validation,0:number_of_observations,:], outputs_scaled_validation[indices_to_use_validation,6]), epochs=80, batch_size=30, verbose=2, shuffle=False)
-
-
-# model_mmse = Sequential()
-# model_mmse.add(LSTM(50, input_shape=(number_of_observations, array_for_model_training.shape[2])))
-
-# # model_mmse.add(Dense(50, activation="relu"))
-
-# model_mmse.add(Dense(1))
-# model_mmse.compile(loss='mae', optimizer='adam')
-
-# history_mmse = model_mmse.fit(array_for_model_training[indices_to_use_training,0:number_of_observations,:], outputs_scaled_training[indices_to_use_training,7], validation_data=(array_for_model_validation[indices_to_use_validation,0:number_of_observations,:], outputs_scaled_validation[indices_to_use_validation,7]), epochs=80, batch_size=30, verbose=2, shuffle=False)
-
-# yhat_adas = return_prediction_continuous(model_adas, history_adas, array_for_model_validation[indices_to_use_validation,0:number_of_observations,:])
-
-
-# baseline_validation_values = baseline_validation.values
 
 
 # # yhat_adas = scaler_adas.inverse_transform(yhat_adas)
-# baseline_validation_values[indices_to_use_validation, 5] = yhat_adas.flatten()
+baseline_validation_values[indices_to_use_validation, 5] = yhat_adas.flatten()
 
 
-# yhat_ventricular_norm = return_prediction_continuous(model_ventricular_norm, history_ventricular_norm, array_for_model_validation[indices_to_use_validation,0:number_of_observations,:])
-# # yhat_ventricular_norm = scaler_vent_norm.inverse_transform(yhat_ventricular_norm)
-# baseline_validation_values[indices_to_use_validation, 6] = yhat_ventricular_norm.flatten()
+yhat_ventricular_norm = return_prediction_continuous(model_ventricular_norm, history_ventricular_norm, array_for_model_validation[indices_to_use_validation,0:number_of_observations,:])
+baseline_validation_values[indices_to_use_validation, 6] = yhat_ventricular_norm.flatten()
 
-# yhat_mmse = return_prediction_continuous(model_mmse, history_mmse, array_for_model_validation[indices_to_use_validation,0:number_of_observations,:])
-# # yhat_mmse = scaler_mmse.inverse_transform(yhat_mmse)
-# baseline_validation_values[indices_to_use_validation, 7] = yhat_mmse.flatten()
+yhat_mmse = return_prediction_continuous(model_mmse, history_mmse, array_for_model_validation[indices_to_use_validation,0:number_of_observations,:])
+# yhat_mmse = scaler_mmse.inverse_transform(yhat_mmse)
+baseline_validation_values[indices_to_use_validation, 7] = yhat_mmse.flatten()
 
-# yhat_final = baseline_validation_values
-baseline_validation_values = baseline_validation.values
-
-
-
-# yhat_final_reduced = yhat_final[indices_to_use_validation,:]
-baseline_validation_values_reduced = baseline_validation_values[indices_to_use_validation,:]
-correct_values_reduced = correct_values[indices_to_use_validation,:]
+yhat_final = baseline_validation_values
 
 
 
-# curr_frame = 5
-# indices_final = numpy.logical_not(numpy.isnan(numpy.array(yhat_final[:,curr_frame], dtype=numpy.float)))
-# indices_baseline = numpy.logical_not(numpy.isnan(numpy.array(baseline_validation_values[:,curr_frame], dtype=numpy.float)))
+
+current_frame = 7
+
+indices_final = numpy.logical_not(numpy.isnan(numpy.array(yhat_final[:,current_frame], dtype=numpy.float)))
+indices_baseline = numpy.logical_not(numpy.isnan(numpy.array(baseline_validation_values[:,current_frame], dtype=numpy.float)))
 
 
 
-# rmse_rnn_total = sqrt(mean_squared_error(yhat_final[indices_final,curr_frame], correct_values[indices_final,curr_frame]))
-# rmse_baseline_total = sqrt(mean_squared_error(baseline_validation_values[indices_baseline,curr_frame], correct_values[indices_baseline,curr_frame]))
+rmse_rnn_total = sqrt(mean_squared_error(yhat_final[:,current_frame], correct_values[:,current_frame]))
+indices_to_rid = ~numpy.isnan(numpy.array(baseline_holdover[:,6], dtype="float64"))
+baseline_holdover_vv = baseline_holdover[indices_to_rid,6]
+correct_values_vv = correct_values[indices_to_rid,6]
+
+rmse_baseline_total = sqrt(mean_squared_error(baseline_holdover_vv, correct_values_vv))
 
 # indices_final_reduced = numpy.logical_not(numpy.isnan(numpy.array(yhat_final_reduced[:,curr_frame], dtype=numpy.float)))
 # indices_baseline_reduced = numpy.logical_not(numpy.isnan(numpy.array(baseline_validation_values_reduced[:,curr_frame], dtype=numpy.float)))
 # rmse_rnn_total_reduced = sqrt(mean_squared_error(yhat_final_reduced[indices_final_reduced,curr_frame], correct_values_reduced[indices_final_reduced,curr_frame]))
 # rmse_baseline_total_reduced = sqrt(mean_squared_error(baseline_validation_values_reduced[indices_baseline_reduced,curr_frame], correct_values_reduced[indices_baseline_reduced,curr_frame]))
 
+pdb.set_trace()
 
 
 

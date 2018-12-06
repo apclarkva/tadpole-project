@@ -4,9 +4,28 @@ adasPercent = c()
 ventricularVolPercent = c()
 mmsePercent = c()
 
+targetDataValidation = read.csv("data/validationOutFinal.csv")
 
-for (index in c(1:dim(validationToFill)[1])){
-  estimate <- validationToFill[index,]
+targetDataValidation <- targetDataValidation[order(as.Date(as.character(targetDataValidation$Date), format="%m/%d/%y")),]
+targetDataValidation <- targetDataValidation[order(targetDataValidation$PTID_Key),]
+
+final_df_rnn = read.csv("data/final_df.csv")
+index = final_df_rnn$CN_Diag > .33
+final_df_rnn$CN_Diag[index] = 1
+
+index = final_df_rnn$MCI_Diag > .33
+final_df_rnn$MCI_Diag[index] = 1
+
+index = final_df_rnn$AD_Diag > .33
+final_df_rnn$AD_Diag[index] = 1
+
+
+
+
+
+
+for (index in c(1:dim(final_df_rnn)[1])){
+  estimate <- final_df_rnn[index,]
   real <- targetDataValidation[index,]
   
   if(index == 116 || index == 117) {
