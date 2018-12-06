@@ -234,6 +234,8 @@ array_for_model_validation = outputs_input_to_obtain(inputs_reshaped_testing, ar
 
 
 def find_indices_to_use(input_data, outputs_scaled, num_observations):
+
+
   patients_in = numpy.unique(input_data[:,1], return_counts=True)
 
   indices_not_nan = numpy.array(outputs_scaled[:,3], dtype=numpy.float)

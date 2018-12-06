@@ -449,13 +449,13 @@ model_ventricular_norm.compile(loss='mae', optimizer='adam')
 
 history_ventricular_norm = model_ventricular_norm.fit(array_for_model_training[indices_to_use_training,0:number_of_observations,:], outputs_scaled_training[indices_to_use_training,6], validation_data=(array_for_model_validation[indices_to_use_validation,0:number_of_observations,:], outputs_scaled_validation[indices_to_use_validation,6]), epochs=vv_epoch, batch_size=vv_batch, verbose=2, shuffle=False)
 
-pyplot.plot(history_ventricular_norm.history['loss'], label='train')
-pyplot.plot(history_ventricular_norm.history['val_loss'], label='test')
-pyplot.title("Diagnosis Ventricular Norm Training")
-pyplot.xlabel("Epoch")
-pyplot.ylabel("Loss")
-pyplot.legend()
-pyplot.show()
+# pyplot.plot(history_ventricular_norm.history['loss'], label='train')
+# pyplot.plot(history_ventricular_norm.history['val_loss'], label='test')
+# pyplot.title("Diagnosis Ventricular Norm Training")
+# pyplot.xlabel("Epoch")
+# pyplot.ylabel("Loss")
+# pyplot.legend()
+# pyplot.show()
 
 model_mmse = Sequential()
 model_mmse.add(LSTM(50, input_shape=(number_of_observations, array_for_model_training.shape[2])))
@@ -498,7 +498,7 @@ yhat_final = baseline_validation_values
 
 
 
-current_frame = 7
+current_frame = 5
 
 indices_final = numpy.logical_not(numpy.isnan(numpy.array(yhat_final[:,current_frame], dtype=numpy.float)))
 indices_baseline = numpy.logical_not(numpy.isnan(numpy.array(baseline_validation_values[:,current_frame], dtype=numpy.float)))
